@@ -748,6 +748,7 @@
 
       const response = await fetch(url);
       const text = await response.text();
+      console.log('=== Raw response (first 1000 chars) ===', text.substring(0, 1000));
 
       let result;
       try {
@@ -796,8 +797,16 @@
       try {
         const statusList = activeStatuses.size > 0 ? Array.from(activeStatuses) : [];
         const result = await apiCall('getOrders', {
-          startDate, endDate, statusList, writeSheet: true
+          startDate, endDate, statusList, writeSheet: false
         });
+
+        console.log('=== API Response ===', JSON.stringify(result).substring(0, 2000));
+        console.log('totalOrders:', result.totalOrders);
+        console.log('totalRows:', result.totalRows);
+        console.log('data type:', typeof result.data, 'length:', result.data ? result.data.length : 'null');
+        if (result.data && result.data.length > 0) {
+          console.log('first row:', JSON.stringify(result.data[0]).substring(0, 500));
+        }
 
         allData = result.data || [];
         filteredData = [...allData];
