@@ -553,6 +553,7 @@
       <div class="settings-row">
         <span class="settings-label"></span>
         <button class="settings-save" onclick="saveSettings()">保存して接続テスト</button>
+        <button class="btn" onclick="runDiagnostic()" style="margin-left:8px">診断</button>
       </div>
     </div>
 
@@ -746,20 +747,48 @@
       const data = encodeURIComponent(JSON.stringify(body));
       const url = gasUrl + '?action=' + encodeURIComponent(action) + '&key=' + encodeURIComponent(apiKey) + '&data=' + data;
 
+      console.log('[apiCall] URL length:', url.length, 'action:', action);
+
       const response = await fetch(url);
       const text = await response.text();
-      console.log('=== Raw response (first 1000 chars) ===', text.substring(0, 1000));
+
+      console.log('[apiCall] Response length:', text.length);
+      console.log('[apiCall] Response preview:', text.substring(0, 1000));
 
       let result;
       try {
         result = JSON.parse(text);
       } catch (parseErr) {
-        console.error('Response:', text.substring(0, 500));
-        throw new Error('レスポンスの解析に失敗しました');
+        console.error('[apiCall] JSON parse failed:', text.substring(0, 2000));
+        throw new Error('レスポンス解析失敗。GASデプロイを更新してください。');
       }
+
+      console.log('[apiCall] Result keys:', Object.keys(result));
+      if (result.debug) console.log('[apiCall] Debug:', result.debug);
 
       if (!result.success) throw new Error(result.error || '不明なエラー');
       return result;
+    }
+
+    async function runDiagnostic() {
+      showLoading('診断中...');
+      try {
+        const result = await apiCall('diag', {
+          startDate: document.getElementById('startDate').value,
+          endDate: document.getElementById('endDate').value
+        });
+        console.log('[DIAG]', JSON.stringify(result, null, 2));
+        hideLoading();
+        let msg = '診断結果:\n';
+        if (result.diagnostic) result.diagnostic.forEach(s => msg += '  ' + s + '\n');
+        if (result.sampleData && result.sampleData.length > 0) {
+          msg += '\nサンプル: ' + result.sampleData[0].orderNumber + ' / ' + result.sampleData[0].itemName;
+        }
+        alert(msg);
+      } catch (e) {
+        hideLoading();
+        alert('診断エラー: ' + e.message);
+      }
     }
 
     async function testConnection() {
