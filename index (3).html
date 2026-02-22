@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>楽天受注ダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #1a1d27;
+      --bg-card: #21252f;
+      --bg-hover: #2a2f3a;
+      --border: #2e3340;
+      --border-active: #bf0000;
+      --text-primary: #e8eaed;
+      --text-secondary: #9aa0ac;
+      --text-muted: #5f6673;
+      --accent: #bf0000;
+      --accent-soft: rgba(191, 0, 0, 0.15);
+      --accent-glow: rgba(191, 0, 0, 0.3);
+      --green: #2ea043;
+      --green-soft: rgba(46, 160, 67, 0.15);
+      --amber: #d29922;
+      --amber-soft: rgba(210, 153, 34, 0.15);
+      --blue: #388bfd;
+      --blue-soft: rgba(56, 139, 253, 0.15);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --font: 'Noto Sans JP', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .header-title {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    .header-title span {
+      color: var(--text-secondary);
+      font-weight: 300;
+      margin-left: 8px;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-dot.connected { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .status-dot.error { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+    /* ===== Main Layout ===== */
+    .main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+
+    /* ===== Settings Panel ===== */
+    .settings-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    .settings-panel.visible { display: block; }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .settings-row:last-child { margin-bottom: 0; }
+
+    .settings-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      min-width: 120px;
+    }
+
+    .settings-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 8px 12px;
+      width: 100%;
+      max-width: 500px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .settings-input:focus { border-color: var(--accent); }
+
+    .settings-save {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .settings-save:hover { opacity: 0.85; }
+
+    /* ===== Controls Bar ===== */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="date"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="date"]:focus { border-color: var(--accent); }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover { opacity: 0.85; background: var(--accent); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-icon {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-filter {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .status-chip {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .status-chip:hover { border-color: var(--text-muted); }
+    .status-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--text-primary); }
+
+    .controls-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 8px 12px 8px 32px;
+      width: 220px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus { border-color: var(--accent); width: 280px; }
+
+    .search-box svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    /* ===== Summary Cards ===== */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      transition: border-color 0.2s;
+    }
+
+    .summary-card:hover { border-color: var(--text-muted); }
+
+    .summary-card .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .summary-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: var(--mono);
+      letter-spacing: -0.02em;
+    }
+
+    .summary-card .sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ===== Table ===== */
+    .table-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .table-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      max-height: calc(100vh - 340px);
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th {
+      background: var(--bg-card);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 500;
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.15s;
+    }
+
+    th:hover { color: var(--text-primary); }
+    th.sorted { color: var(--accent); }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    tr:hover td { background: var(--bg-hover); }
+
+    .col-order-number {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--blue);
+    }
+
+    .col-price {
+      font-family: var(--mono);
+      text-align: right;
+    }
+
+    .col-status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-100 { background: var(--amber-soft); color: var(--amber); }
+    .status-200 { background: var(--blue-soft); color: var(--blue); }
+    .status-300 { background: var(--accent-soft); color: #f06060; }
+    .status-400 { background: var(--amber-soft); color: var(--amber); }
+    .status-500 { background: var(--green-soft); color: var(--green); }
+    .status-600 { background: var(--blue-soft); color: var(--blue); }
+    .status-700 { background: var(--green-soft); color: var(--green); }
+    .status-800, .status-900 { background: rgba(110,110,110,0.15); color: #888; }
+
+    /* ===== Loading ===== */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 17, 23, 0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .loading-overlay.visible { display: flex; }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .empty-state .sub {
+      font-size: 12px;
+    }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-size: 13px;
+      z-index: 300;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
+    }
+
+    .toast.visible { transform: translateY(0); opacity: 1; }
+    .toast.error { border-color: var(--accent); }
+    .toast.success { border-color: var(--green); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .header { padding: 0 16px; }
+      .main { padding: 16px; }
+      .controls { gap: 10px; }
+      .controls-right { margin-left: 0; width: 100%; }
+      .search-box input { width: 100%; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ===== Animations ===== */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-logo">R</div>
+      <div class="header-title">
+        楽天受注ダッシュボード
+        <span id="shopName"></span>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">未接続</span>
+      <button class="btn btn-icon" onclick="toggleSettings()" title="設定">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Settings Panel -->
+  <div class="main">
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-row">
+        <span class="settings-label">GAS Web App URL</span>
+        <input class="settings-input" id="gasUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">API Key</span>
+        <input class="settings-input" id="apiKey" type="password" placeholder="rktn_order_2026" />
+      </div>
+      <div class="settings-row">
+        <span class="settings-label"></span>
+        <button class="settings-save" onclick="saveSettings()">保存して接続テスト</button>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">期間</span>
+        <input type="date" id="startDate" />
+        <span style="color:var(--text-muted)">～</span>
+        <input type="date" id="endDate" />
+      </div>
+      <div class="control-group">
+        <span class="control-label">ステータス</span>
+        <div class="status-filter" id="statusFilter"></div>
+      </div>
+      <button class="btn btn-primary" id="fetchBtn" onclick="fetchOrders()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        取得
+      </button>
+      <div class="controls-right">
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="注文番号・氏名で検索" oninput="filterTable()" />
+        </div>
+        <button class="btn" onclick="exportCSV()" title="CSV出力">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <div class="table-info">
+        <span id="tableCount">0 件</span>
+        <span id="tableTotal"></span>
+      </div>
+      <div class="table-scroll">
+        <table id="orderTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <p>注文データがありません</p>
+          <p class="sub">期間を指定して「取得」をクリックしてください</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">注文データを取得中...</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // =============================================
+    //  設定 & 状態管理
+    // =============================================
+    const COLUMNS = [
+      { key: 'orderNumber', label: '注文番号', class: 'col-order-number' },
+      { key: 'statusName', label: 'ステータス', render: (v, row) => `<span class="col-status status-${row.status}">${v}</span>` },
+      { key: 'orderDatetime', label: '注文日時' },
+      { key: 'ordererName', label: '注文者' },
+      { key: 'senderName', label: '送付先' },
+      { key: 'itemName', label: '商品名' },
+      { key: 'units', label: '個数' },
+      { key: 'itemPrice', label: '商品単価', class: 'col-price', render: v => v ? `¥${Number(v).toLocaleString()}` : '' },
+      { key: 'goodsPrice', label: '合計金額', class: 'col-price', render: v => v ? `¥${Number(v).toLocaleString()}` : '' },
+      { key: 'requestPrice', label: '請求金額', class: 'col-price', render: v => v ? `¥${Number(v).toLocaleString()}` : '' },
+      { key: 'settlementMethod', label: '決済' },
+      { key: 'senderPrefecture', label: '都道府県' },
+      { key: 'deliveryDate', label: 'お届け日' },
+      { key: 'selectedChoice', label: '選択肢' },
+      { key: 'skuInfo', label: 'SKU' },
+      { key: 'memo', label: 'メモ' },
+    ];
+
+    const STATUS_LIST = [
+      { code: 100, name: '注文確認待ち' },
+      { code: 200, name: '楽天処理中' },
+      { code: 300, name: '発送待ち' },
+      { code: 500, name: '発送済' },
+      { code: 600, name: '支払手続き中' },
+      { code: 700, name: '支払手続き済' },
+      { code: 900, name: 'キャンセル' },
+    ];
+
+    let allData = [];
+    let filteredData = [];
+    let sortCol = 'orderDatetime';
+    let sortAsc = false;
+    let activeStatuses = new Set();
+
+    // =============================================
+    //  初期化
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      initDates();
+      initStatusFilter();
+      initTable();
+      loadSettings();
+    });
+
+    function initDates() {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 30);
+      document.getElementById('startDate').value = formatISO(start);
+      document.getElementById('endDate').value = formatISO(end);
+    }
+
+    function initStatusFilter() {
+      const container = document.getElementById('statusFilter');
+      STATUS_LIST.forEach(s => {
+        const chip = document.createElement('button');
+        chip.className = 'status-chip';
+        chip.textContent = s.name;
+        chip.dataset.code = s.code;
+        chip.onclick = () => {
+          chip.classList.toggle('active');
+          if (chip.classList.contains('active')) {
+            activeStatuses.add(s.code);
+          } else {
+            activeStatuses.delete(s.code);
+          }
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function initTable() {
+      const thead = document.getElementById('tableHead');
+      const tr = document.createElement('tr');
+      COLUMNS.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col.label;
+        th.onclick = () => sortTable(col.key);
+        if (col.key === sortCol) th.classList.add('sorted');
+        tr.appendChild(th);
+      });
+      thead.appendChild(tr);
+    }
+
+    // =============================================
+    //  設定管理
+    // =============================================
+    function loadSettings() {
+      const gasUrl = localStorage.getItem('gasUrl') || '';
+      const apiKey = localStorage.getItem('apiKey') || '';
+      document.getElementById('gasUrl').value = gasUrl;
+      document.getElementById('apiKey').value = apiKey;
+
+      if (!gasUrl) {
+        document.getElementById('settingsPanel').classList.add('visible');
+        return;
+      }
+      testConnection();
+    }
+
+    function saveSettings() {
+      const gasUrl = document.getElementById('gasUrl').value.trim();
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!gasUrl) { showToast('GAS Web App URL を入力してください', 'error'); return; }
+      localStorage.setItem('gasUrl', gasUrl);
+      localStorage.setItem('apiKey', apiKey);
+      testConnection();
+    }
+
+    function toggleSettings() {
+      document.getElementById('settingsPanel').classList.toggle('visible');
+    }
+
+    // =============================================
+    //  API 通信
+    // =============================================
+    async function apiCall(action, params = {}) {
+      const gasUrl = localStorage.getItem('gasUrl');
+      const apiKey = localStorage.getItem('apiKey') || '';
+      if (!gasUrl) throw new Error('GAS URL が未設定です');
+
+      const body = { action, key: apiKey, ...params };
+      const response = await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },  // GAS CORS対応
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || '不明なエラー');
+      return data;
+    }
+
+    async function testConnection() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      try {
+        const result = await apiCall('test');
+        dot.className = 'status-dot connected';
+        text.textContent = result.shop || '接続OK';
+        document.getElementById('shopName').textContent = result.shop || '';
+        document.getElementById('settingsPanel').classList.remove('visible');
+        showToast(`接続OK — ${result.shop} (直近${result.recentOrders}件)`, 'success');
+      } catch (e) {
+        dot.className = 'status-dot error';
+        text.textContent = 'エラー';
+        showToast('接続失敗: ' + e.message, 'error');
+      }
+    }
+
+    // =============================================
+    //  注文データ取得
+    // =============================================
+    async function fetchOrders() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      if (!startDate || !endDate) {
+        showToast('期間を指定してください', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('fetchBtn');
+      btn.disabled = true;
+      showLoading('注文データを取得中...');
+
+      try {
+        const statusList = activeStatuses.size > 0 ? Array.from(activeStatuses) : [];
+        const result = await apiCall('getOrders', {
+          startDate, endDate, statusList, writeSheet: true
+        });
+
+        allData = result.data || [];
+        filteredData = [...allData];
+        updateSummary();
+        renderTable();
+        showToast(`${result.totalOrders}件の注文（${result.totalRows}行）を取得しました`, 'success');
+      } catch (e) {
+        showToast('取得エラー: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        hideLoading();
+      }
+    }
+
+    // =============================================
+    //  サマリー表示
+    // =============================================
+    function updateSummary() {
+      const grid = document.getElementById('summaryGrid');
+      grid.innerHTML = '';
+
+      const total = allData.length;
+      const totalSales = allData.reduce((s, r) => s + (Number(r.requestPrice) || 0), 0);
+      const statusGroups = {};
+      allData.forEach(r => {
+        const sn = r.statusName || '不明';
+        if (!statusGroups[sn]) statusGroups[sn] = 0;
+        statusGroups[sn]++;
+      });
+
+      const cards = [
+        { label: '総注文数', value: total.toLocaleString(), sub: '件' },
+        { label: '総売上', value: `¥${totalSales.toLocaleString()}`, sub: '請求金額合計' },
+      ];
+
+      // ステータス別カード（上位4つ）
+      const sorted = Object.entries(statusGroups).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      sorted.forEach(([name, count]) => {
+        cards.push({ label: name, value: count.toLocaleString(), sub: '件' });
+      });
+
+      cards.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'summary-card fade-in';
+        div.innerHTML = `
+          <div class="label">${c.label}</div>
+          <div class="value">${c.value}</div>
+          <div class="sub">${c.sub}</div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    // =============================================
+    //  テーブル表示
+    // =============================================
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      const empty = document.getElementById('emptyState');
+      const count = document.getElementById('tableCount');
+      const totalEl = document.getElementById('tableTotal');
+
+      if (filteredData.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        count.textContent = '0 件';
+        totalEl.textContent = '';
+        return;
+      }
+
+      empty.style.display = 'none';
+      count.textContent = `${filteredData.length} 件`;
+
+      const totalSales = filteredData.reduce((s, r) => s + (Number(r.requestPrice) || 0), 0);
+      totalEl.textContent = `合計: ¥${totalSales.toLocaleString()}`;
+
+      // ソート
+      filteredData.sort((a, b) => {
+        let va = a[sortCol] || '', vb = b[sortCol] || '';
+        if (typeof va === 'number' && typeof vb === 'number') {
+          return sortAsc ? va - vb : vb - va;
+        }
+        va = String(va); vb = String(vb);
+        return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+
+      // Render (max 2000 rows for performance)
+      const display = filteredData.slice(0, 2000);
+      tbody.innerHTML = display.map(row => {
+        const cells = COLUMNS.map(col => {
+          const val = row[col.key] || '';
+          const rendered = col.render ? col.render(val, row) : escapeHtml(String(val));
+          return `<td class="${col.class || ''}">${rendered}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+    }
+
+    function sortTable(key) {
+      if (sortCol === key) {
+        sortAsc = !sortAsc;
+      } else {
+        sortCol = key;
+        sortAsc = true;
+      }
+      // Update header styles
+      document.querySelectorAll('#tableHead th').forEach((th, i) => {
+        th.classList.toggle('sorted', COLUMNS[i].key === sortCol);
+      });
+      renderTable();
+    }
+
+    function filterTable() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      if (!q) {
+        filteredData = [...allData];
+      } else {
+        filteredData = allData.filter(row =>
+          (row.orderNumber || '').toLowerCase().includes(q) ||
+          (row.ordererName || '').toLowerCase().includes(q) ||
+          (row.senderName || '').toLowerCase().includes(q) ||
+          (row.itemName || '').toLowerCase().includes(q) ||
+          (row.memo || '').toLowerCase().includes(q)
+        );
+      }
+      renderTable();
+    }
+
+    // =============================================
+    //  CSV エクスポート
+    // =============================================
+    function exportCSV() {
+      if (filteredData.length === 0) {
+        showToast('エクスポートするデータがありません', 'error');
+        return;
+      }
+
+      const allKeys = Object.keys(filteredData[0]);
+      const header = allKeys.join(',');
+      const rows = filteredData.map(row =>
+        allKeys.map(k => `"${String(row[k] || '').replace(/"/g, '""')}"`).join(',')
+      );
+
+      const bom = '\uFEFF';
+      const csv = bom + header + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rakuten_orders_${formatISO(new Date())}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`${filteredData.length}件をCSV出力しました`, 'success');
+    }
+
+    // =============================================
+    //  ユーティリティ
+    // =============================================
+    function formatISO(d) {
+      return d.toISOString().split('T')[0];
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function showLoading(text) {
+      document.getElementById('loadingText').textContent = text || '読み込み中...';
+      document.getElementById('loadingOverlay').classList.add('visible');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('visible');
+    }
+
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type;
+      setTimeout(() => toast.classList.add('visible'), 10);
+      setTimeout(() => toast.classList.remove('visible'), 4000);
+    }
+  </script>
+</body>
+</html>
