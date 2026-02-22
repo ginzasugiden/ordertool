@@ -543,12 +543,8 @@
   <div class="main">
     <div class="settings-panel" id="settingsPanel">
       <div class="settings-row">
-        <span class="settings-label">GAS Web App URL</span>
-        <input class="settings-input" id="gasUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
-      </div>
-      <div class="settings-row">
         <span class="settings-label">API Key</span>
-        <input class="settings-input" id="apiKey" type="password" placeholder="rktn_order_2026" />
+        <input class="settings-input" id="apiKey" type="password" placeholder="APIキーを入力" />
       </div>
       <div class="settings-row">
         <span class="settings-label"></span>
@@ -654,6 +650,8 @@
     let filteredData = [];
     let sortCol = 'orderDatetime';
     let sortAsc = false;
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyZn6Flm_Kmra7HfkHH8cySNikSY53BFbliEyn65LMzYZD_RtvywrWuhlAeulRh7uPr_A/exec';
+
     let activeStatuses = new Set();
 
     // =============================================
@@ -710,12 +708,10 @@
     //  設定管理
     // =============================================
     function loadSettings() {
-      const gasUrl = localStorage.getItem('gasUrl') || '';
       const apiKey = localStorage.getItem('apiKey') || '';
-      document.getElementById('gasUrl').value = gasUrl;
       document.getElementById('apiKey').value = apiKey;
 
-      if (!gasUrl) {
+      if (!apiKey) {
         document.getElementById('settingsPanel').classList.add('visible');
         return;
       }
@@ -723,10 +719,8 @@
     }
 
     function saveSettings() {
-      const gasUrl = document.getElementById('gasUrl').value.trim();
       const apiKey = document.getElementById('apiKey').value.trim();
-      if (!gasUrl) { showToast('GAS Web App URL を入力してください', 'error'); return; }
-      localStorage.setItem('gasUrl', gasUrl);
+      if (!apiKey) { showToast('API Key を入力してください', 'error'); return; }
       localStorage.setItem('apiKey', apiKey);
       testConnection();
     }
@@ -739,9 +733,8 @@
     //  API 通信
     // =============================================
     async function apiCall(action, params = {}) {
-      const gasUrl = localStorage.getItem('gasUrl');
       const apiKey = localStorage.getItem('apiKey') || '';
-      if (!gasUrl) throw new Error('GAS URL が未設定です');
+      const gasUrl = GAS_URL;
 
       const body = { ...params };
       const data = encodeURIComponent(JSON.stringify(body));
