@@ -787,6 +787,7 @@
     async function testConnection() {
       const dot = document.getElementById('statusDot');
       const text = document.getElementById('statusText');
+      showLoading('接続テスト中...');
       try {
         const result = await apiCall('test');
         dot.className = 'status-dot connected';
@@ -798,6 +799,8 @@
         dot.className = 'status-dot error';
         text.textContent = 'エラー';
         showToast('接続失敗: ' + e.message, 'error');
+      } finally {
+        hideLoading();
       }
     }
 
