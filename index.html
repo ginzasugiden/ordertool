@@ -742,42 +742,23 @@
       const apiKey = localStorage.getItem('apiKey') || '';
       if (!gasUrl) throw new Error('GAS URL が未設定です');
 
-      const body = { action, key: apiKey, ...params };
+      const body = { ...params };
+      const data = encodeURIComponent(JSON.stringify(body));
+      const url = gasUrl + '?action=' + encodeURIComponent(action) + '&key=' + encodeURIComponent(apiKey) + '&data=' + data;
 
+      const response = await fetch(url);
+      const text = await response.text();
+
+      let result;
       try {
-        // GAS Web App は POST + リダイクト時に問題が出るため
-        // google.script.run 的な通信パターンを使用
-        const response = await fetch(gasUrl, {
-          method: 'POST',
-          body: JSON.stringify(body),
-          // Content-Type ヘッダーを設定しない → CORSプリフライト回避
-        });
-
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (parseErr) {
-          console.error('Response text:', text.substring(0, 500));
-          throw new Error('レスポンスの解析に失敗しました');
-        }
-
-        if (!data.success) throw new Error(data.error || '不明なエラー');
-        return data;
-
-      } catch (fetchErr) {
-        console.error('Fetch error:', fetchErr);
-        // POST が失敗した場合、GET で再試行（テスト用）
-        if (action === 'test') {
-          const url = gasUrl + '?action=test&key=' + encodeURIComponent(apiKey);
-          const res = await fetch(url);
-          const text = await res.text();
-          const data = JSON.parse(text);
-          if (!data.success) throw new Error(data.error || '不明なエラー');
-          return data;
-        }
-        throw fetchErr;
+        result = JSON.parse(text);
+      } catch (parseErr) {
+        console.error('Response:', text.substring(0, 500));
+        throw new Error('レスポンスの解析に失敗しました');
       }
+
+      if (!result.success) throw new Error(result.error || '不明なエラー');
+      return result;
     }
 
     async function testConnection() {
